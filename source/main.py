@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, url_for, flash, redirect
 app = Flask(__name__)
 import pymssql
 
+
 #     print("ID=%d, Name=%s" % (row['id'], row['name']))
 def obtenerArticulos():
     conn = pymssql.connect("basescurso.database.windows.net", "adminBases", "Tantan20", "dbTarea1")
