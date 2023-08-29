@@ -28,34 +28,78 @@ def obtenerArticulos():
 #     conn.commit()
 #     conn.close()
 #     return results
+# def insertarArticulo(nombre, precio):
+#     try:
+#         # Establecer la conexión con SQL Server
+#         conn = pymssql.connect("34.30.51.145", "sqlserver", "Tantan20", "Tarea1")
+#         cursor = conn.cursor()
+
+#         # Ejecutar el procedimiento almacenado para insertar un nuevo artículo
+#         cursor.execute("EXEC dbo.InsertarArticulo @Nombre=%s, @Precio=%s", (nombre, precio))
+
+#         # Obtener el resultado
+#         result = cursor.fetchone()
+#         codigo = result['Codigo']
+#         mensaje = result['Mensaje']
+
+#         # Confirmar la transacción
+#         conn.commit()
+
+#         # Imprimir el código y el mensaje
+#         print(f"Código: {codigo}, Mensaje: {mensaje}")
+
+#     except pymssql.Error as e:
+#         # Manejar cualquier error que ocurra
+#         print(f"Error: {e}")
+
+#     finally:
+#         # Cerrar la conexión\
+#         cursor.close()
+#         conn.close()
+#         return result
 def insertarArticulo(nombre, precio):
+    result = {}
     try:
         # Establecer la conexión con SQL Server
         conn = pymssql.connect("34.30.51.145", "sqlserver", "Tantan20", "Tarea1")
-        cursor = conn.cursor()
+        
+        # Usar el mismo tipo de cursor que en obtenerArticulos
+        cursor = conn.cursor(as_dict=True)
+
+        # Imprimir el estado de la conexión (esto es más para depuración)
+        # print(f"Estado de la conexión antes de ejecutar el SP: {conn._conn.connected()}")
+        print(f"Estado de la conexión antes de ejecutar el SP: {conn._conn.connected}")
 
         # Ejecutar el procedimiento almacenado para insertar un nuevo artículo
-        cursor.execute("EXEC dbo.InsertarArticulo @Nombre=%s, @Precio=%s", (nombre, precio))
+        cursor.execute("EXEC dbo.InsertarArticulo @Nombre=%s, @Precio=%s", (nombre, float(precio)))
+
+        # Imprimir el estado de la conexión (esto es más para depuración)
+        # print(f"Estado de la conexión después de ejecutar el SP: {conn._conn.connected()}")
+        print(f"Estado de la conexión después de ejecutar el SP: {conn._conn.connected}")
 
         # Obtener el resultado
         result = cursor.fetchone()
-        codigo = result['Codigo']
-        mensaje = result['Mensaje']
+
+        print("RESULT===>",result)
 
         # Confirmar la transacción
         conn.commit()
 
-        # Imprimir el código y el mensaje
-        print(f"Código: {codigo}, Mensaje: {mensaje}")
+        # Imprimir el resultado (esto es más para depuración)
+        print(f"Código: {result['Codigo']}, Mensaje: {result['Mensaje']}")
 
     except pymssql.Error as e:
         # Manejar cualquier error que ocurra
         print(f"Error: {e}")
+        result = {'Codigo': 500, 'Mensaje': 'Error desconocido'}
 
     finally:
         # Cerrar la conexión
+        cursor.close()
         conn.close()
-        return result
+
+    return result
+
 
 
 @app.route('/')
@@ -77,14 +121,15 @@ def createArticle():
             articlePrice=request.form["articlePrice"]
             print("DATA TO BE INSERTED ",articleName,articlePrice)
             resultInsert=insertarArticulo(articleName,articlePrice)
-            print("RESULT INSERTED==>",resultInsert)
-            print("Code INSERTED==>",resultInsert[0])
-            print("Message INSERTED==>",resultInsert[1])
-            if(resultInsert[0]==409):
-                return render_template('create.html',error=resultInsert[1])
+            codigo=resultInsert.get("Codigo")
+            Mensaje=resultInsert.get("Mensaje")
+            # resultInsert=insertarArticuloSimple(articleName,articlePrice)
+           
+            if(codigo==409):
+                return render_template('create.html',error=Mensaje)
             else:
                 articulos=obtenerArticulos()
-                return render_template('index.html',articulos=articulos,message=resultInsert[1]) 
+                return render_template('index.html',articulos=articulos,message=Mensaje) 
 
 
         
